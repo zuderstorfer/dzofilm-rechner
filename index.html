@@ -159,8 +159,12 @@
         <div class="v"><span id="wdOut">–</span></div>
       </div>
       <div class="card">
-        <div class="k">Bildwinkel horiz.</div>
-        <div class="v"><span id="aovOut">–</span></div>
+        <div class="k">Bildwinkel (horiz.) · Kleinbild-Äquiv.</div>
+        <div class="v"><span id="aovOut">–</span> <small id="aovSub"></small></div>
+      </div>
+      <div class="card hl full">
+        <div class="k">Schüfftan: max. Monitor an naher Schärfegrenze</div>
+        <div class="v"><span id="monOut">–</span> &nbsp;<small id="monSub"></small></div>
       </div>
     </div>
     <div class="note" id="cropNote"></div>
@@ -169,12 +173,16 @@
 
 <!-- VISUALISATION -->
 <div class="panel full" style="margin-top:16px">
-  <h2>Bildausschnitt auf der Schärfeebene</h2>
-  <div class="vis"><svg id="vis" viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet"></svg></div>
+  <h2>Bildausschnitt: Schärfeebene &amp; nahe Schärfegrenze (Schüfftan)</h2>
+  <div class="vis"><svg id="vis" viewBox="0 0 1000 404" preserveAspectRatio="xMidYMid meet"></svg></div>
   <div class="legend">
-    <span><i style="background:var(--acc2)"></i>Bildausschnitt (Sensorprojektion)</span>
-    <span><i style="background:var(--good)"></i>Referenzmaßstab</span>
+    <span><i style="background:var(--acc2)"></i>Bildfeld auf der Schärfeebene (Motiv)</span>
+    <span><i style="background:var(--acc)"></i>nahe Schärfegrenze (ganzes Feld) = max. Monitor, quer formatfüllend</span>
+    <span><i style="background:var(--good)"></i>grüne Bildhälfte (½ Breite × volle Höhe) — Hochkant-Monitor</span>
+    <span><i style="background:var(--warn)"></i>27″ Apple Display hochkant (maßstabsgetreu, auf Hälfte zentriert)</span>
   </div>
+  <div class="note"><b>⌀ Zoll:</b> Diagonale des jeweiligen Bereichs. <b>Quer</b> = 16:9-Monitor liegend, der den ganzen Frame ausfüllt (Höhe limitiert). <b>Bildhälfte hochkant</b> = du spiegelst eine ganze Bildhälfte ein und stellst den Monitor um 90° gedreht auf: Seine Breite deckt die <b>halbe Bildbreite</b>, seine Höhe die <b>volle Bildhöhe</b>. Da die Hälfte fast quadratisch ist, ein 16:9-Panel aber schlank, bleibt oben/unten ein ungenutzter Rand. „min." = kleinster Monitor, der die Hälfte gerade abdeckt → auf nächste reale Größe aufrunden.</div>
+  <div class="note" id="refNote" style="border-top:1px solid var(--line);padding-top:10px"></div>
 </div>
 
 <!-- ZOOM COMPARISON -->
@@ -250,17 +258,25 @@ function compute(f, d_m, N, c, sensor){
   const behind = (far===Infinity)? Infinity : far-s;
   const dof = (far===Infinity)? Infinity : far-near;
   const wd = Math.max(f/m - 7, 6);     // Front -> Motiv (mm), kalibriert
+  const nf = d_m - front/1000;         // nahe Schaerfegrenze (m, ab Filmebene)
+  let mNear = f/(nf*1000 - OFFSET);    // Abbildungsmassstab auf der nahen Grenze
+  if(!(mNear>0) || mNear>MMAX) mNear = MMAX;
   return {m,clamped,
     Wmm:sensor.w/m, Hmm:sensor.h/m,
     dof, front, behind, wd,
-    nearFilm: d_m - front/1000, farFilm:(far===Infinity)?Infinity:d_m+behind/1000,
-    aov: 2*Math.atan(sensor.w/(2*f))*180/Math.PI};
+    nearFilm: nf, farFilm:(far===Infinity)?Infinity:d_m+behind/1000,
+    WnearMm:sensor.w/mNear, HnearMm:sensor.h/mNear,
+    aovH: 2*Math.atan(sensor.w/(2*f))*180/Math.PI,
+    aovV: 2*Math.atan(sensor.h/(2*f))*180/Math.PI,
+    aovD: 2*Math.atan(Math.hypot(sensor.w,sensor.h)/(2*f))*180/Math.PI,
+    feq: f*FF_DIAG/Math.hypot(sensor.w,sensor.h)};
 }
 
 function render(){
   const f = parseFloat($('f').value);
   const dRaw = parseFloat($('d').value);
-  const d_m = sliderToDist(dRaw);
+  let d_m = sliderToDist(dRaw);
+  d_m = d_m>=0.5 ? Math.round(d_m*10)/10 : Math.round(d_m*100)/100;  // Raster 0,1 m (Makro <0,5 m: 0,01 m)
   const N = parseFloat($('N').value);
   const c = parseFloat($('c').value);
   const sensor = SENSORS[$('sensor').value];
@@ -281,7 +297,8 @@ function render(){
   $('dofOut').textContent = fmtLen(r.dof);
   $('dofRange').textContent = "("+fmtLen(r.front)+" davor · "+(r.behind===Infinity?"∞ dahinter":fmtLen(r.behind)+" dahinter")+")";
   $('wdOut').textContent = fmtLen(r.wd);
-  $('aovOut').textContent = fmtNum(r.aov,1)+"°";
+  $('aovOut').textContent = fmtNum(r.aovH,1)+"°";
+  $('aovSub').innerHTML = "V "+fmtNum(r.aovV,1)+"° · ⌀ "+fmtNum(r.aovD,1)+"° &nbsp;·&nbsp; ≙ "+fmtNum(r.feq,0)+" mm KB";
 
   // crop note
   const cropW = SENSORS.ff.w/r.m;
@@ -289,37 +306,65 @@ function render(){
     ? `Vollformat-Referenz. Auf <b>Super 16</b> wäre der Ausschnitt ~3× enger: <b>${fmtLen(SENSORS.s16.w/r.m)} × ${fmtLen(SENSORS.s16.h/r.m)}</b>.`
     : `Crop ggü. Vollformat ≈ <b>${fmtNum(FF_DIAG/Math.hypot(sensor.w,sensor.h),2)}×</b>. Dasselbe Bild auf Vollformat: ${fmtLen(cropW)} breit.`;
 
-  drawVis(r, sensor);
+  const fieldInch = Math.round(Math.hypot(r.WnearMm,r.HnearMm)/25.4);
+  const mon169 = Math.ceil(r.HnearMm*Math.sqrt(337)/9/25.4);           // 16:9 quer, formatfüllend (ganzes Feld)
+  const GW=r.WnearMm/2, GH=r.HnearMm;                                  // Bildhälfte
+  const monHalf = Math.ceil(GW*Math.sqrt(337)/9/25.4);                 // hochkant, deckt halbe Bildbreite x volle Höhe
+  const unusedHalf = Math.round((1 - 0.5625*GH/GW)*100);
+  $('monOut').textContent = fmtLen(r.WnearMm)+" × "+fmtLen(r.HnearMm)+"  ·  ⌀ "+fieldInch+"″";
+  $('monSub').innerHTML = "Ebene @ "+fmtNum(Math.max(r.nearFilm,0),2)+" m &nbsp;·&nbsp; ganzes Feld quer ≈ <b style=\"color:var(--acc)\">"+mon169+"″</b> &nbsp;·&nbsp; Bildhälfte hochkant ≈ <b style=\"color:var(--good)\">"+monHalf+"″</b>";
+
+  // Referenz: 27" Apple Display (16:9), Bildschirmflaeche in cm
+  const appleW = 27*16/Math.sqrt(337)*2.54, appleH = 27*9/Math.sqrt(337)*2.54;
+  const ok = 27>=monHalf;
+  $('refNote').innerHTML = "<b>📐 Vergleich – 27″ Apple Display</b> (16:9): Bildschirmfläche <b>"
+    + fmtNum(appleW,1)+" × "+fmtNum(appleH,1)+" cm</b>. Für die grüne Bildhälfte hochkant nötig: <b>"+monHalf+"″</b> → ein 27″ "
+    + (ok ? "<b style=\"color:var(--good)\">reicht ✓</b>" : "<b style=\"color:var(--warn)\">zu klein ✗</b>")+".";
+
+  drawVis(r, sensor, d_m);
   drawTable(d_m, N, c, sensor, f);
   $('tblDist').textContent = fmtNum(d_m,2);
 }
 
-function drawVis(r, sensor){
-  const W=1000,Hh=360, pad=40;
+function drawVis(r, sensor, d_m){
+  const W=1000,H=404;
+  const padX=70, topCap=46, botCap=92;
   const aspect = r.Wmm/r.Hmm;
-  // fit frame into box
-  const boxW=W-2*pad, boxH=Hh-2*pad-30;
+  const boxW=W-2*padX, boxH=H-topCap-botCap;
   let fw=boxW, fh=fw/aspect;
   if(fh>boxH){ fh=boxH; fw=fh*aspect; }
-  const x=(W-fw)/2, y=(Hh-fh)/2-6;
-  // reference scale: pick nice length that is < frame width
-  const realW=r.Wmm; // mm across frame
-  const nice=[1,2,5,10,20,50,100,200,500,1000,2000,5000];
-  let ref=nice[0];
-  for(const n of nice){ if(n< realW*0.9) ref=n; }
-  const refPx = fw*(ref/realW);
+  const cx=W/2, cy=topCap+boxH/2;
+  const x=cx-fw/2, y=cy-fh/2;
+  // inneres Rechteck = Feld an der nahen Schaerfegrenze (kleiner, da naeher)
+  let k = r.WnearMm/r.Wmm; if(!(k>0)) k=0; if(k>1) k=1;
+  const iw=fw*k, ih=fh*k, ix=cx-iw/2, iy=cy-ih/2;
+  // gruene Bildhaelfte = linke Haelfte des nahen Feldes (1/2 Breite x volle Hoehe)
+  const gw=iw/2, gh=ih;
+  // 27" Apple Display hochkant (rot), zentriert auf Mitte der gruenen Haelfte
+  const scale = fw/r.Wmm;                                   // px pro mm
+  const apW = 27*9/Math.sqrt(337)*25.4*scale;              // Breite (9-Seite) hochkant
+  const apH = 27*16/Math.sqrt(337)*25.4*scale;             // Hoehe (16-Seite) hochkant
+  const gcx = ix+gw/2, gcy = iy+gh/2;
+  const arx = gcx-apW/2, ary = gcy-apH/2;
+  const nearD = Math.max(r.nearFilm,0);
+  const dInch  = Math.round(Math.hypot(r.WnearMm,r.HnearMm)/25.4);
+  const mon169 = Math.ceil(r.HnearMm*Math.sqrt(337)/9/25.4);          // 16:9 quer, formatfuellend
+  const GW=r.WnearMm/2, GH=r.HnearMm;                                  // Masse der Bildhaelfte
+  const dHalf  = Math.round(Math.hypot(GW,GH)/25.4);
+  const monHalf= Math.ceil(GW*Math.sqrt(337)/9/25.4);                  // hochkant, breitenlimitiert
+  const unused = Math.round((1 - 0.5625*GH/GW)*100);                   // ungenutzte Monitorflaeche
   const svg=$('vis');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
   svg.innerHTML=`
-    <rect x="${x}" y="${y}" width="${fw}" height="${fh}" fill="rgba(92,200,255,.08)" stroke="#5cc8ff" stroke-width="2" rx="4"/>
-    <line x1="${x}" y1="${y+fh/2}" x2="${x+fw}" y2="${y+fh/2}" stroke="#5cc8ff" stroke-dasharray="4 6" stroke-width="1" opacity=".4"/>
-    <text x="${x+fw/2}" y="${y-12}" fill="#5cc8ff" font-size="20" text-anchor="middle" font-family="monospace">${fmtLen(r.Wmm)} breit</text>
-    <text x="${x-14}" y="${y+fh/2}" fill="#5cc8ff" font-size="18" text-anchor="end" dominant-baseline="middle" font-family="monospace" transform="rotate(-90 ${x-14} ${y+fh/2})">${fmtLen(r.Hmm)} hoch</text>
-    <g>
-      <line x1="${x}" y1="${y+fh+22}" x2="${x+refPx}" y2="${y+fh+22}" stroke="#5dd39e" stroke-width="3"/>
-      <line x1="${x}" y1="${y+fh+17}" x2="${x}" y2="${y+fh+27}" stroke="#5dd39e" stroke-width="3"/>
-      <line x1="${x+refPx}" y1="${y+fh+17}" x2="${x+refPx}" y2="${y+fh+27}" stroke="#5dd39e" stroke-width="3"/>
-      <text x="${x+refPx+10}" y="${y+fh+27}" fill="#5dd39e" font-size="16" font-family="monospace">${fmtLen(ref)} Referenz</text>
-    </g>`;
+    <rect x="${x}" y="${y}" width="${fw}" height="${fh}" fill="rgba(92,200,255,.07)" stroke="#5cc8ff" stroke-width="2" rx="3"/>
+    <rect x="${ix}" y="${iy}" width="${iw}" height="${ih}" fill="rgba(255,179,71,.14)" stroke="#ffb347" stroke-width="2" rx="2"/>
+    <rect x="${ix}" y="${iy}" width="${gw}" height="${gh}" fill="rgba(93,211,158,.18)" stroke="#5dd39e" stroke-width="2" stroke-dasharray="5 4" rx="2"/>
+    <rect x="${arx}" y="${ary}" width="${apW}" height="${apH}" fill="rgba(255,107,107,.10)" stroke="#ff6b6b" stroke-width="2" rx="2"/>
+    <line x1="${cx-8}" y1="${cy}" x2="${cx+8}" y2="${cy}" stroke="#7d8a99" stroke-width="1"/>
+    <line x1="${cx}" y1="${cy-8}" x2="${cx}" y2="${cy+8}" stroke="#7d8a99" stroke-width="1"/>
+    <text x="${cx}" y="26" fill="#5cc8ff" font-size="18" text-anchor="middle" font-family="monospace">Schärfeebene @ ${fmtNum(d_m,2)} m  ·  ${fmtLen(r.Wmm)} × ${fmtLen(r.Hmm)}</text>
+    <text x="${cx}" y="${H-52}" fill="#ffb347" font-size="17" text-anchor="middle" font-family="monospace">nahe Schärfegrenze @ ${fmtNum(nearD,2)} m  ·  ${fmtLen(r.WnearMm)} × ${fmtLen(r.HnearMm)}  ·  ⌀ ${dInch}″  ·  quer ${mon169}″</text>
+    <text x="${cx}" y="${H-22}" fill="#5dd39e" font-size="17" text-anchor="middle" font-family="monospace">grüne Bildhälfte  ·  ${fmtLen(GW)} × ${fmtLen(GH)}  ·  ⌀ ${dHalf}″  ·  hochkant min. ${monHalf}″</text>`;
 }
 
 function drawTable(d_m, N, c, sensor, curF){
