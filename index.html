@@ -136,6 +136,25 @@
       <input type="range" id="c" min="0.006" max="0.025" step="0.001" value="0.012">
       <div class="note">Schärfekriterium. Für Super 16 üblich ~0,012 mm. Kleiner = strengeres Kriterium = weniger Schärfentiefe.</div>
     </div>
+
+    <div class="ctrl row2">
+      <div>
+        <label style="display:block;margin-bottom:7px">Einspiegel-Display (Schüfftan)</label>
+        <select id="display">
+          <option value="oled" selected>ASUS ProArt PA32UCDMR-K · 32″ QD-OLED, true black (ca. 2.000 €)</option>
+          <option value="xdr">Apple Pro Display XDR · 32″ Mini-LED (ca. 5.500 €)</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;margin-bottom:7px">Filmempfindlichkeit (EI · 7219)</label>
+        <select id="iso">
+          <option value="250">250 (Pull −1)</option>
+          <option value="500" selected>500 (nativ)</option>
+          <option value="1000">1000 (Push +1)</option>
+          <option value="2000">2000 (Push +2)</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- RESULTS -->
@@ -179,10 +198,31 @@
     <span><i style="background:var(--acc2)"></i>Bildfeld auf der Schärfeebene (Motiv)</span>
     <span><i style="background:var(--acc)"></i>nahe Schärfegrenze (ganzes Feld) = max. Monitor, quer formatfüllend</span>
     <span><i style="background:var(--good)"></i>grüne Bildhälfte (½ Breite × volle Höhe) — Hochkant-Monitor</span>
-    <span><i style="background:var(--warn)"></i>27″ Apple Display hochkant (maßstabsgetreu, auf Hälfte zentriert)</span>
+    <span><i style="background:var(--warn)"></i>gewähltes Display hochkant (maßstabsgetreu, auf Hälfte zentriert)</span>
   </div>
   <div class="note"><b>⌀ Zoll:</b> Diagonale des jeweiligen Bereichs. <b>Quer</b> = 16:9-Monitor liegend, der den ganzen Frame ausfüllt (Höhe limitiert). <b>Bildhälfte hochkant</b> = du spiegelst eine ganze Bildhälfte ein und stellst den Monitor um 90° gedreht auf: Seine Breite deckt die <b>halbe Bildbreite</b>, seine Höhe die <b>volle Bildhöhe</b>. Da die Hälfte fast quadratisch ist, ein 16:9-Panel aber schlank, bleibt oben/unten ein ungenutzter Rand. „min." = kleinster Monitor, der die Hälfte gerade abdeckt → auf nächste reale Größe aufrunden.</div>
   <div class="note" id="refNote" style="border-top:1px solid var(--line);padding-top:10px"></div>
+</div>
+
+<!-- HELLIGKEITSBUDGET -->
+<div class="panel full" style="margin-top:16px">
+  <h2>Helligkeitsbudget — Schüfftan-Einspiegelung</h2>
+  <div class="out">
+    <div class="card b2">
+      <div class="k">Display-Decke (nach Spiegel ~90 %)</div>
+      <div class="v"><span id="ceilOut">–</span> &nbsp;<small id="ceilSub"></small></div>
+    </div>
+    <div class="card">
+      <div class="k">Belichtung bei <span id="tStopOut">T8</span></div>
+      <div class="v"><span id="expOut">–</span> &nbsp;<small id="expSub"></small></div>
+    </div>
+    <div class="card hl full">
+      <div class="k">Eingespiegelte Hälfte erreicht diffuses Weiß? <span id="lumWarn"></span></div>
+      <div class="v"><span id="lumOut">–</span> &nbsp;<small id="lumSub"></small></div>
+    </div>
+  </div>
+  <div class="note" id="lumNote"></div>
+  <div class="note" id="lumPeakNote" style="border-top:1px solid var(--line);padding-top:10px"></div>
 </div>
 
 <!-- ZOOM COMPARISON -->
@@ -208,13 +248,16 @@
     <li><b>Blende:</b> Die Optik ist <b>T8</b>. Für die Schärfentiefe zählt die geometrische f-Zahl — wegen Transmissionsverlust bei vielen Elementen liegt sie eher bei f/5,6–f/8. Standard f/8; bei Bedarf umstellen.</li>
     <li><b>Makro-Hinweis:</b> Laut Tests fällt die Bildqualität nahe 2:1 ab (Schärfe/CA); Abblenden auf T11–T16 hilft. Plane Reserve ein.</li>
     <li><b>A-Minima:</b> Super-16-Kamera. Crop ggü. Vollformat ≈ 3× — der Ausschnitt ist also ~3× enger als bei FF-Rechnern (genau die Differenz zu deinem 1,3 × 2,3 m-Beispiel, das einem Vollformat-Sensor entspricht).</li>
+    <li><b>Helligkeit:</b> Belichtung L = K·T²/(EI·t), K = 12,5; diffuses Weiß ≈ 5× Mittelgrau (90 % vs. 18 %). Display-Decke = Vollfeld-/Uniform-Helligkeit × ~0,90 (Frontspiegel). Apple Pro Display XDR (32″, ~5.500 €): 1000 nits dauerhaft vollflächig (Mini-LED, APL-stabil). ASUS ProArt PA32UCDMR-K (32″ QD-OLED, True Black 400, ~2.000 € inkl. MCA02-Kolorimeter): ~250 nits Uniform, ~1000 nits Spitze bei kleiner Fläche (ABL) — Niedrig-APL begünstigt dunkle Plates. T-Blende = Blendenwahl, mind. T8.</li>
   </ul>
   <div class="note">Quellen:
     <a href="https://www.bhphotovideo.com/c/product/1871378-REG/dzofilm_dzo_x1828a_x_tract_0_18_28mm_t8.html" target="_blank">B&amp;H</a> ·
     <a href="https://dzofilm.com/en/products/x-tract-probe-zoom" target="_blank">DZOFILM</a> ·
     <a href="https://www.cined.com/dzofilm-x-tract-macro-zoom-probe-lens-introduced-3-versions-18-28mm-t8-and-full-frame/" target="_blank">CineD</a> ·
     <a href="https://www.adorama.com/alc/dzofilm-x-tract-18-28mm-probe-macro-cine-lens/" target="_blank">Adorama</a> ·
-    <a href="https://fstoppers.com/reviews/dzofilm-x-tract-redefining-what-macro-probe-lens-can-710365" target="_blank">Fstoppers</a>
+    <a href="https://fstoppers.com/reviews/dzofilm-x-tract-redefining-what-macro-probe-lens-can-710365" target="_blank">Fstoppers</a> ·
+    <a href="https://support.apple.com/en-us/111892" target="_blank">Apple Pro Display XDR (1000 nits)</a> ·
+    <a href="https://www.asus.com/displays-desktops/monitors/proart/proart-display-oled-pa32ucdmr-k/" target="_blank">ASUS ProArt PA32UCDMR-K</a>
   </div>
 </details>
 
@@ -232,6 +275,16 @@ const OFFSET = 459;      // mm, kalibrierter Relais-Offset: d_filmebene[mm] = f/
 const BODY  = 466;       // mm, Filmebene → Frontspitze (414 Body + 52 Flansch PL)
 const MMAX  = 2.1;
 const DMIN = 0.46, DMAX = 20; // m, logarithmische Distanzskala
+
+// Einspiegel-Displays (Vollfeld-/Uniform-Helligkeit, Niedrig-APL-Spitze, Diagonale, ppi)
+const DISPLAYS = {
+  oled:{name:"ASUS ProArt PA32UCDMR-K", nits:250,  peak:1000, diag:32, ppi:140, mini:false},
+  xdr: {name:"Apple Pro Display XDR",    nits:1000, peak:1000, diag:32, ppi:218, mini:true }
+};
+const K_EXP = 12.5;     // Reflexionslicht-Kalibrierkonstante (cd·s/m²)
+const T_SH  = 1/48;     // Belichtungszeit: 24 fps / 180° Sektor
+const MIRROR = 0.90;    // Frontoberflächenspiegel-Reflexion
+const WHITE_RATIO = 5;  // diffuses Weiß (90 %) über Mittelgrau (18 %)
 
 const $ = id => document.getElementById(id);
 const fmtNum = (x,d=1)=> x.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -280,6 +333,8 @@ function render(){
   const N = parseFloat($('N').value);
   const c = parseFloat($('c').value);
   const sensor = SENSORS[$('sensor').value];
+  const disp = DISPLAYS[$('display').value];
+  const iso = parseFloat($('iso').value);
 
   // slider fills + labels
   $('fVal').textContent = fmtNum(f,1).replace(',0','');
@@ -314,19 +369,49 @@ function render(){
   $('monOut').textContent = fmtLen(r.WnearMm)+" × "+fmtLen(r.HnearMm)+"  ·  ⌀ "+fieldInch+"″";
   $('monSub').innerHTML = "Ebene @ "+fmtNum(Math.max(r.nearFilm,0),2)+" m &nbsp;·&nbsp; ganzes Feld quer ≈ <b style=\"color:var(--acc)\">"+mon169+"″</b> &nbsp;·&nbsp; Bildhälfte hochkant ≈ <b style=\"color:var(--good)\">"+monHalf+"″</b>";
 
-  // Referenz: 27" Apple Display (16:9), Bildschirmflaeche in cm
-  const appleW = 27*16/Math.sqrt(337)*2.54, appleH = 27*9/Math.sqrt(337)*2.54;
-  const ok = 27>=monHalf;
-  $('refNote').innerHTML = "<b>📐 Vergleich – 27″ Apple Display</b> (16:9): Bildschirmfläche <b>"
-    + fmtNum(appleW,1)+" × "+fmtNum(appleH,1)+" cm</b>. Für die grüne Bildhälfte hochkant nötig: <b>"+monHalf+"″</b> → ein 27″ "
+  // Referenz: gewähltes Display (16:9), Bildschirmflaeche in cm
+  const dispW = disp.diag*16/Math.sqrt(337)*2.54, dispH = disp.diag*9/Math.sqrt(337)*2.54;
+  const ok = disp.diag>=monHalf;
+  $('refNote').innerHTML = "<b>📐 Größen-Vergleich – "+disp.name+"</b> ("+disp.diag+"″, 16:9): Bildschirmfläche <b>"
+    + fmtNum(dispW,1)+" × "+fmtNum(dispH,1)+" cm</b>. Für die grüne Bildhälfte hochkant nötig: <b>"+monHalf+"″</b> → "+disp.diag+"″ "
     + (ok ? "<b style=\"color:var(--good)\">reicht ✓</b>" : "<b style=\"color:var(--warn)\">zu klein ✗</b>")+".";
 
-  drawVis(r, sensor, d_m);
+  // Helligkeitsbudget: T-Blende fürs Licht folgt der Blendenwahl, mind. T8 (offene Optik)
+  const Tstop = Math.max(8, N);
+  const Lgrey = K_EXP*Tstop*Tstop/(iso*T_SH);     // cd/m² Mittelgrau
+  const Lwhite = Lgrey*WHITE_RATIO;                // cd/m² diffuses Weiß
+  const ceil = disp.nits*MIRROR;                   // Decke nach Spiegel (Vollfeld/Uniform)
+  const ceilPeak = disp.peak*MIRROR;               // Niedrig-APL-Spitze nach Spiegel
+  const overGrey = Math.log2(ceil/Lgrey);
+  const overWhite = Math.log2(ceil/Lwhite);
+  const lux = Lgrey*Math.PI/0.18;                  // nötige Beleuchtungsstärke am 18%-Grau
+  const reaches = ceil>=Lwhite;
+  const Tmax = Math.sqrt((ceil/WHITE_RATIO)*iso*T_SH/K_EXP);  // größte Blende, bei der Weiß noch erreicht wird
+
+  $('tStopOut').textContent = "T"+fmtNum(Tstop,0);
+  $('ceilOut').textContent = disp.nits+" nits → "+fmtNum(ceil,0)+" cd/m²";
+  $('ceilSub').innerHTML = disp.mini ? "Mini-LED · APL-stabil" : "OLED · Uniform-Modus";
+  $('expOut').textContent = "Grau "+fmtNum(Lgrey,0)+" · Weiß "+fmtNum(Lwhite,0)+" cd/m²";
+  $('expSub').innerHTML = "≈ "+fmtNum(lux,0)+" Lux am Motiv · "+iso+" EI · 1/48 s";
+
+  $('lumWarn').innerHTML = reaches ? '' : '<span class="badge warn">unter Weiß</span>';
+  $('lumOut').textContent = reaches ? "ja ✓" : "nein ✗";
+  $('lumOut').style.color = reaches ? "var(--good)" : "var(--warn)";
+  $('lumSub').innerHTML = reaches
+    ? "<b style=\"color:var(--good)\">"+fmtNum(overWhite,1)+" Bl. Reserve</b> über Weiß · "+fmtNum(overGrey,1)+" Bl. über Grau · reicht abgeblendet bis ~T"+fmtNum(Tmax,1)
+    : "<b style=\"color:var(--warn)\">"+fmtNum(-overWhite,1)+" Bl. unter Weiß</b> · bräuchte T"+fmtNum(Tmax,1)+" Öffnung (Optik nur bis T8) · "+fmtNum(overGrey,1)+" Bl. über Grau";
+
+  $('lumNote').innerHTML = "<b>Lesart:</b> Beim 100-%-Schüfftan-Spiegel muss die Display-Leuchtdichte der real belichteten Bildhälfte entsprechen. Gerechnet mit Mittelgrau = K·T²/(EI·t), K = 12,5, diffuses Weiß = ×5, Decke = Display-Helligkeit × ~0,90 (Frontspiegel). Die <b>T-Blende fürs Licht</b> folgt der Blendenwahl oben, mindestens T8 (offene Blende der Optik).";
+  $('lumPeakNote').innerHTML = disp.mini
+    ? "<b>"+disp.name+"</b> · "+disp.ppi+" ppi · hält die Decke unabhängig vom Bildinhalt (kein ABL), kann aber an der harten Splitscreen-Kante leichtes Blooming zeigen."
+    : "<b>"+disp.name+"</b> · "+disp.ppi+" ppi · echtes Schwarz, kein Blooming. Bei <b>dunklem Bild</b> (niedriger APL) steigt die Spitze auf ~"+disp.peak+" nits → "+fmtNum(ceilPeak,0)+" cd/m² ≈ <b style=\"color:var(--good)\">"+fmtNum(Math.log2(ceilPeak/Lgrey),1)+" Bl. über Grau</b> für helle Akzente. Die Decke oben gilt fürs großflächig helle Bild (Uniform).";
+
+  drawVis(r, sensor, d_m, disp);
   drawTable(d_m, N, c, sensor, f);
   $('tblDist').textContent = fmtNum(d_m,2);
 }
 
-function drawVis(r, sensor, d_m){
+function drawVis(r, sensor, d_m, disp){
   const W=1000,H=404;
   const padX=70, topCap=46, botCap=92;
   const aspect = r.Wmm/r.Hmm;
@@ -340,10 +425,10 @@ function drawVis(r, sensor, d_m){
   const iw=fw*k, ih=fh*k, ix=cx-iw/2, iy=cy-ih/2;
   // gruene Bildhaelfte = linke Haelfte des nahen Feldes (1/2 Breite x volle Hoehe)
   const gw=iw/2, gh=ih;
-  // 27" Apple Display hochkant (rot), zentriert auf Mitte der gruenen Haelfte
+  // gewähltes Display hochkant (rot), zentriert auf Mitte der gruenen Haelfte
   const scale = fw/r.Wmm;                                   // px pro mm
-  const apW = 27*9/Math.sqrt(337)*25.4*scale;              // Breite (9-Seite) hochkant
-  const apH = 27*16/Math.sqrt(337)*25.4*scale;             // Hoehe (16-Seite) hochkant
+  const apW = disp.diag*9/Math.sqrt(337)*25.4*scale;       // Breite (9-Seite) hochkant
+  const apH = disp.diag*16/Math.sqrt(337)*25.4*scale;      // Hoehe (16-Seite) hochkant
   const gcx = ix+gw/2, gcy = iy+gh/2;
   const arx = gcx-apW/2, ary = gcy-apH/2;
   const nearD = Math.max(r.nearFilm,0);
@@ -380,7 +465,7 @@ function drawTable(d_m, N, c, sensor, curF){
   $('tbl').innerHTML=rows;
 }
 
-['f','d','N','c','sensor'].forEach(id=>$(id).addEventListener('input',render));
+['f','d','N','c','sensor','display','iso'].forEach(id=>$(id).addEventListener('input',render));
 // init default distance slider to 1.00 m
 $('d').value = distToSlider(1.0);
 render();
